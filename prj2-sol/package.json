@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "@types/chai": "^5.0.0",
+    "@types/mocha": "^10.0.8",
+    "@types/node": "^22.6.2",
+    "chai": "^5.1.1",
+    "cs544-js-utils": "file:cs544-js-utils.tgz",
+    "cs544-node-utils": "file:cs544-node-utils.tgz",
+    "mocha": "^10.7.3",
+    "mongodb": "^6.9.0",
+    "shx": "^0.3.4",
+    "typescript": "^5.6.2",
+    "zod": "^3.23.8"
+  },
+  "scripts": {
+    "clean": "shx rm -rf dist",
+    "build": "tsc",
+    "postbuild": "shx chmod a+x dist/index.js",
+    "watch": "tsc --watch",
+    "pretest": "npm run build",
+    "test": "mocha --reporter-options maxDiffSize=128000 dist/test",
+    "predebug-test": "npm run build",
+    "debug-test": "mocha --inspect-brk dist/test"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/semver": "^7.5.8",
+    "mongodb-memory-server": "^10.1.2"
+  }
+}
