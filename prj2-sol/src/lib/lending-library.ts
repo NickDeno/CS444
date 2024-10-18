@@ -54,8 +54,7 @@ export class LendingLibrary {
     }
     const book = bookResult.val;
     try {
-      const existingBook = await this.dao.books.findOne({ isbn: book.isbn });
-      
+      const existingBook = await this.dao.findBookByIsbn(book.isbn);
       if (existingBook) {
         const mismatchField = compareBook(existingBook, book);
         if (mismatchField) {
@@ -63,17 +62,14 @@ export class LendingLibrary {
         }
 
         const updatedCopies = (existingBook.nCopies || 0) + (book.nCopies || 1);
-        await this.dao.books.updateOne(
-          { isbn: book.isbn }, 
-          { $set: { nCopies: updatedCopies } }
-        );
+        await this.dao.updateBookCopies(book.isbn, updatedCopies);
         return Errors.okResult({ ...existingBook, nCopies: updatedCopies });
       } else {
         const newBook = {
           ...book,
           nCopies: book.nCopies || 1 // Ensure nCopies has a default of 1 if not provided
         };
-        await this.dao.books.insertOne(newBook);
+        await this.dao.insertBook(newBook);
         return Errors.okResult(newBook);
       }
     } catch (error) {
@@ -103,7 +99,15 @@ export class LendingLibrary {
   async findBooks(req: Record<string, any>)
     : Promise<Errors.Result<Lib.XBook[]>>
   {
-    return Errors.errResult('TODO');
+    const validationResult = Lib.validate<Lib.Find>('findBooks', req);
+    if (!validationResult.isOk) {
+      return validationResult as Errors.ErrResult;
+    }
+    const { search, index = 0, count = 0 } = validationResult.val;
+    const words = search.match(/\w+/g);
+    const cleanedSearch = words.map(word => `"${word}"`).join(' ')
+    const searchResults = await this.dao.findBooks(cleanedSearch, index, count);
+    return Errors.okResult(searchResults);
   }
 
 

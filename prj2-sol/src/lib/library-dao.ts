@@ -3,6 +3,7 @@ import * as mongo from 'mongodb';
 import { Errors } from 'cs544-js-utils';
 
 import * as Lib from './library.js';
+import { boolean } from 'zod';
 
 //TODO: define any DB specific types if necessary
 
@@ -21,8 +22,8 @@ export class LibraryDao {
   //called by below static make() factory function with
   //parameters to be cached in this instance.
   constructor(
-    public readonly client: mongo.MongoClient,
-    public readonly books: mongo.Collection<Lib.XBook>,) {
+    private readonly client: mongo.MongoClient,
+    private readonly books: mongo.Collection<Lib.XBook>,) {
   }
 
   //static factory function; should do all async operations like
@@ -73,6 +74,35 @@ export class LibraryDao {
       return Errors.errResult((err as Error).message, 'DB');
     }
   }
+
+  async findBookByIsbn(isbn: string): Promise<Lib.XBook | null> {
+      return await this.books.findOne({ isbn });
+  }
+
+  async updateBookCopies(isbn: string, updatedCopies: number): Promise<void> {
+      // Perform the update operation
+      await this.books.updateOne(
+        { isbn }, 
+        { $set: { nCopies: updatedCopies } }
+      );
+  }
+
+  async insertBook(book: Lib.XBook): Promise<void> {
+    // Perform the insert operation
+    await this.books.insertOne(book);
+  }
+
+  async findBooks(search: string, index: number, count: number): Promise<Lib.XBook[]> {
+    const booksCursor = await this.books.find(
+      { $text: { $search: search } }
+    )
+    .sort({ title: 1 })   // Sort by title
+    .skip(index)          // Skip to the requested index
+    .limit(count);        // Limit the number of results to 'count'
+    const books = await booksCursor.toArray();
+    return books;
+  }
+
 
 } //class LibDao
 
