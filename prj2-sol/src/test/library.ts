@@ -51,7 +51,12 @@ describe('library types', () => {
     });
     
     it('badly typed fields makes a good book invalid', () => {
-      assert.fail('TODO');
+      const req: Record<string, any> = { ...BOOK_1 };
+      // Sets authors to a number, which is invalid as all authors should be strings
+      req.authors = [123,321];
+      const result = Lib.validate('addBook', req);
+      assert(result.isOk === false);
+      expect(result.errors.length).to.be.gt(0)
     });
 
     it('empty string fields makes a good book invalid', () => {
