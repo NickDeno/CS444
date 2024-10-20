@@ -129,7 +129,7 @@ export class LendingLibrary {
     const {isbn, patronId} = req;
     const book = await this.dao.findBook(isbn);
     if (!book) {
-      return Errors.errResult(`Unknown book ${isbn}`, { code: 'BAD_REQ', widget: isbn });
+      return Errors.errResult(`Unknown book ${isbn}`, { code: 'BAD_REQ', widget: 'isbn' });
     }
     const numBookCheckouts = await this.dao.getNumBookCheckouts(isbn);
     if(numBookCheckouts === book.nCopies){

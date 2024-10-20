@@ -24,8 +24,8 @@ export class LibraryDao {
   constructor(
     private readonly client: mongo.MongoClient,
     private readonly books: mongo.Collection<Lib.XBook>,
-    private readonly bookCheckouts: mongo.Collection<{isbn: string; patronIds: string[]}>,
-    private readonly patronCheckouts: mongo.Collection<{patronId: string; isbns: string[]}>) {
+    private readonly bookCheckouts: mongo.Collection<{isbn: string; patronId: string}>,
+    private readonly patronCheckouts: mongo.Collection<{patronId: string; isbn: string}>) {
   }
 
   //static factory function; should do all async operations like
@@ -39,8 +39,8 @@ export class LibraryDao {
       const db = client.db();
 
       const books = db.collection<Lib.XBook>('books');
-      const bookCheckouts = db.collection<{ isbn: string; patronIds: string[] }>('bookCheckouts');
-      const patronCheckouts = db.collection<{ patronId: string; isbns: string[] }>('patronCheckouts');
+      const bookCheckouts = db.collection<{ isbn: string; patronId: string}>('bookCheckouts');
+      const patronCheckouts = db.collection<{ patronId: string; isbn: string}>('patronCheckouts');
 
       await books.createIndex({ title: 'text', authors: 'text', isbn: 'text' });
       await bookCheckouts.createIndex({isbn: 'text'});
@@ -73,7 +73,9 @@ export class LibraryDao {
    */
   async clear(): Promise<Errors.Result<void>> {
     try {
-      await this.books.deleteMany({}); // Delete all books
+      await this.books.deleteMany({});
+      await this.bookCheckouts.deleteMany({});
+      await this.patronCheckouts.deleteMany({});
       return Errors.VOID_RESULT;
     } catch (err) {
       return Errors.errResult((err as Error).message, 'DB');
@@ -82,19 +84,6 @@ export class LibraryDao {
 
   async findBook(isbn: string): Promise<Lib.XBook | null> {
       return await this.books.findOne({ isbn });
-  }
-
-  async updateBookCopies(isbn: string, updatedCopies: number): Promise<void> {
-      // Perform the update operation
-      await this.books.updateOne(
-        { isbn }, 
-        { $set: { nCopies: updatedCopies } }
-      );
-  }
-
-  async insertBook(book: Lib.XBook): Promise<void> {
-    // Perform the insert operation
-    await this.books.insertOne(book);
   }
 
   async findBooks(search: string, index: number, count: number): Promise<Lib.XBook[]> {
@@ -109,51 +98,36 @@ export class LibraryDao {
     return books;
   }
 
-  async getNumBookCheckouts(isbn: string): Promise<number>{
-    const bookCheckouts = await this.bookCheckouts.findOne({isbn});
-    if(bookCheckouts){
-      return bookCheckouts.patronIds.length;
-    } else {
-      this.bookCheckouts.insertOne({isbn: isbn, patronIds: []});
-      return 0;
-    }
+  async updateBookCopies(isbn: string, updatedCopies: number): Promise<void> {
+      await this.books.updateOne(
+        { isbn }, 
+        { $set: { nCopies: updatedCopies } }
+      );
   }
+
+  async insertBook(book: Lib.XBook): Promise<void> {
+    await this.books.insertOne(book);
+  }
+
+  async getNumBookCheckouts(isbn: string): Promise<number>{
+    const numBookCheckouts = await this.bookCheckouts.countDocuments({isbn});
+    return numBookCheckouts;
+  }
+
   async checkPatronHasBook(isbn: string, patronId: string): Promise<boolean> {
-    const bookCheckouts = await this.bookCheckouts.findOne({ isbn });  
-    if (!bookCheckouts) {
-      return false;
-    }
-    const isCheckedOut = bookCheckouts.patronIds.includes(patronId);
-    return isCheckedOut;
+    const bookCheckout = await this.bookCheckouts.findOne({ isbn, patronId });
+    return !!bookCheckout;
   }
 
   async checkoutBook(patronId: string, isbn: string): Promise<void> {
-    await this.bookCheckouts.updateOne(
-      { isbn: isbn },
-      { $addToSet: { patronIds: patronId } },  
-      { upsert: true }
-    );
-  
-    await this.patronCheckouts.updateOne(
-      { patronId: patronId },
-      { $addToSet: { isbns: isbn } },  
-      { upsert: true }
-    );  
+    await this.bookCheckouts.insertOne({ isbn, patronId });
+    await this.patronCheckouts.insertOne({ patronId, isbn });
   }
 
   async returnBook(patronId: string, isbn: string): Promise<void> {
-    await this.bookCheckouts.updateOne(
-      { isbn: isbn },
-      { $pull: { patronIds: patronId } }
-    );
-
-    await this.patronCheckouts.updateOne(
-      { patronId: patronId },
-      { $pull: { isbns: isbn } } 
-    );
+    await this.bookCheckouts.deleteOne({ isbn, patronId });
+    await this.patronCheckouts.deleteOne({ patronId, isbn });
   }
-
-
 } //class LibDao
 
 
