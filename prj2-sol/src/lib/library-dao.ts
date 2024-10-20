@@ -23,7 +23,9 @@ export class LibraryDao {
   //parameters to be cached in this instance.
   constructor(
     private readonly client: mongo.MongoClient,
-    private readonly books: mongo.Collection<Lib.XBook>,) {
+    private readonly books: mongo.Collection<Lib.XBook>,
+    private readonly bookCheckouts: mongo.Collection<{isbn: string; patronIds: string[]}>,
+    private readonly patronCheckouts: mongo.Collection<{patronId: string; isbns: string[]}>) {
   }
 
   //static factory function; should do all async operations like
@@ -34,14 +36,17 @@ export class LibraryDao {
     try {
       // Establish a connection to the MongoDB server using promises
       const client = await new mongo.MongoClient(dbUrl, MONGO_OPTIONS).connect(); 
-      // Get a reference to the database
-      const db = client.db(); // You may specify the db name here if needed
-      // Get the 'books' collection, typed with Book type
+      const db = client.db();
+
       const books = db.collection<Lib.XBook>('books');
-      // Create text indexes on 'title' and 'authors' fields to support search
-      await books.createIndex({ title: 'text', authors: 'text' });
-      // Return a new LibraryDao instance with the connected client and collection
-      return Errors.okResult(new LibraryDao(client, books));
+      const bookCheckouts = db.collection<{ isbn: string; patronIds: string[] }>('bookCheckouts');
+      const patronCheckouts = db.collection<{ patronId: string; isbns: string[] }>('patronCheckouts');
+
+      await books.createIndex({ title: 'text', authors: 'text', isbn: 'text' });
+      await bookCheckouts.createIndex({isbn: 'text'});
+      await patronCheckouts.createIndex({patronId: 'text'});
+
+      return Errors.okResult(new LibraryDao(client, books, bookCheckouts, patronCheckouts));
     } catch (error) {
       return Errors.errResult((error as Error).message, 'DB');
     }
@@ -75,7 +80,7 @@ export class LibraryDao {
     }
   }
 
-  async findBookByIsbn(isbn: string): Promise<Lib.XBook | null> {
+  async findBook(isbn: string): Promise<Lib.XBook | null> {
       return await this.books.findOne({ isbn });
   }
 
@@ -94,13 +99,58 @@ export class LibraryDao {
 
   async findBooks(search: string, index: number, count: number): Promise<Lib.XBook[]> {
     const booksCursor = await this.books.find(
-      { $text: { $search: search } }
+      { $text: { $search: search } }, 
+      { projection: { _id: 0 } }
     )
     .sort({ title: 1 })   // Sort by title
     .skip(index)          // Skip to the requested index
     .limit(count);        // Limit the number of results to 'count'
     const books = await booksCursor.toArray();
     return books;
+  }
+
+  async getNumBookCheckouts(isbn: string): Promise<number>{
+    const bookCheckouts = await this.bookCheckouts.findOne({isbn});
+    if(bookCheckouts){
+      return bookCheckouts.patronIds.length;
+    } else {
+      this.bookCheckouts.insertOne({isbn: isbn, patronIds: []});
+      return 0;
+    }
+  }
+  async checkPatronHasBook(isbn: string, patronId: string): Promise<boolean> {
+    const bookCheckouts = await this.bookCheckouts.findOne({ isbn });  
+    if (!bookCheckouts) {
+      return false;
+    }
+    const isCheckedOut = bookCheckouts.patronIds.includes(patronId);
+    return isCheckedOut;
+  }
+
+  async checkoutBook(patronId: string, isbn: string): Promise<void> {
+    await this.bookCheckouts.updateOne(
+      { isbn: isbn },
+      { $addToSet: { patronIds: patronId } },  
+      { upsert: true }
+    );
+  
+    await this.patronCheckouts.updateOne(
+      { patronId: patronId },
+      { $addToSet: { isbns: isbn } },  
+      { upsert: true }
+    );  
+  }
+
+  async returnBook(patronId: string, isbn: string): Promise<void> {
+    await this.bookCheckouts.updateOne(
+      { isbn: isbn },
+      { $pull: { patronIds: patronId } }
+    );
+
+    await this.patronCheckouts.updateOne(
+      { patronId: patronId },
+      { $pull: { isbns: isbn } } 
+    );
   }
 
 

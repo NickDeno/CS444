@@ -54,7 +54,7 @@ export class LendingLibrary {
     }
     const book = bookResult.val;
     try {
-      const existingBook = await this.dao.findBookByIsbn(book.isbn);
+      const existingBook = await this.dao.findBook(book.isbn);
       if (existingBook) {
         const mismatchField = compareBook(existingBook, book);
         if (mismatchField) {
@@ -122,7 +122,25 @@ export class LendingLibrary {
    *      patron already has a copy of the same book checked out
    */
   async checkoutBook(req: Record<string, any>) : Promise<Errors.Result<void>> {
-    return Errors.errResult('TODO');
+    const validationResult = Lib.validate<Lib.Lend>('checkoutBook', req);
+    if(!validationResult.isOk){
+      return validationResult as Errors.ErrResult;
+    }
+    const {isbn, patronId} = req;
+    const book = await this.dao.findBook(isbn);
+    if (!book) {
+      return Errors.errResult(`Unknown book ${isbn}`, { code: 'BAD_REQ', widget: isbn });
+    }
+    const numBookCheckouts = await this.dao.getNumBookCheckouts(isbn);
+    if(numBookCheckouts === book.nCopies){
+      return Errors.errResult(`No copies of the book ${isbn} are available for checkout`, { code: 'BAD_REQ', widget: isbn });
+    }
+    const patronHasBook = await this.dao.checkPatronHasBook(isbn, patronId);
+    if(patronHasBook){
+      return Errors.errResult(`patron ${patronId} already has book ${isbn}`, { code: 'BAD_REQ', widget: isbn });  
+    }
+    await this.dao.checkoutBook(patronId, isbn);
+    return Errors.VOID_RESULT;
   }
 
   /** Set up patron req.patronId to returns book req.isbn.
@@ -135,7 +153,21 @@ export class LendingLibrary {
    *    no checkout of the book by patronId.
    */
   async returnBook(req: Record<string, any>) : Promise<Errors.Result<void>> {
-    return Errors.errResult('TODO');
+    const validationResult = Lib.validate<Lib.Lend>('checkoutBook', req);
+    if(!validationResult.isOk){
+      return validationResult as Errors.ErrResult;
+    }
+    const {isbn, patronId} = req;
+    const book = await this.dao.findBook(isbn);
+    if (!book) {
+      return Errors.errResult(`Unknown book ${isbn}`, { code: 'BAD_REQ', widget: isbn });
+    }
+    const patronHasBook = await this.dao.checkPatronHasBook(isbn, patronId);
+    if(!patronHasBook){
+      return Errors.errResult(`There is no checkout of book ${isbn} by patron ${patronId}`, { code: 'BAD_REQ', widget: isbn });  
+    }
+    await this.dao.returnBook(patronId, isbn);
+    return Errors.VOID_RESULT;
   }
 
   //add class code as needed

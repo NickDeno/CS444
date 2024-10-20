@@ -14,8 +14,8 @@ export { BOOKS, };
 //also, import json requires experimental import assertions
 async function getTestBooks() {
   //const dataPath = Path.join(process.env.HOME, 'CS544/prj2/prj2-sol/data/books.json');
-  //const dataPath = 'F:/Users/Nick DeNobrega/Desktop/CS444-Projects/prj2-sol/data/books.json';
-  const dataPath = 'C:/Users/Nickd/Desktop/CS444-Projects/prj2-sol/data/books.json';
+  const dataPath = 'F:/Users/Nick DeNobrega/Desktop/CS444-Projects/prj2-sol/data/books.json';
+  ///const dataPath = 'C:/Users/Nickd/Desktop/CS444-Projects/prj2-sol/data/books.json';
   const readResult = await readJson(dataPath);
   if (readResult.isOk === false) throw readResult.errors;
   return readResult.val as Book[];
