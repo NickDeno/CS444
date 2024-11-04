@@ -1,6 +1,8 @@
 Team Members:	XXX
-B-Number:	XXX
-Email:		XXX
+B-Number:	01036102
+Email:		ndenobrega@binghamton.edu
 
-Add text here as needed to document the status of your project.
+To run the code, ensure that you are cd into prj2-sol directory. Then run npm ci to install 
+required dependencies from package.json file. Finally run dist/index.js mongodb://localhost:27017/books
+followed by one of the commands addBook|clear|checkoutBook|findBooks|loadPaths|returnBook
 

@@ -1,0 +1,40 @@
+{
+  "dependencies": {
+    "@types/chai": "^5.0.0",
+    "@types/mocha": "^10.0.8",
+    "@types/node": "^22.7.7",
+    "body-parser": "^1.20.3",
+    "chai": "^5.1.1",
+    "cors": "^2.8.5",
+    "cs544-js-utils": "file:cs544-js-utils.tgz",
+    "cs544-node-utils": "file:cs544-node-utils.tgz",
+    "express": "^4.21.1",
+    "http-status": "^2.0.0",
+    "lending-library": "file:lending-library-0.1.1.tgz",
+    "mocha": "^10.7.3",
+    "mongodb": "^6.9.0",
+    "shx": "^0.3.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
+    "zod": "^3.23.8"
+  },
+  "scripts": {
+    "clean": "shx rm -rf dist",
+    "build": "tsc",
+    "postbuild": "shx chmod a+x dist/index.js",
+    "watch": "tsc --watch",
+    "pretest": "npm run build",
+    "test": "mocha --reporter-options maxDiffSize=128000 dist/test",
+    "predebug-test": "npm run build",
+    "debug-test": "mocha --inspect-brk dist/test"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/semver": "^7.5.8",
+    "@types/supertest": "^6.0.2",
+    "mongodb-memory-server": "^10.1.2",
+    "supertest": "^7.0.0"
+  }
+}
