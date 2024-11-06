@@ -16,6 +16,7 @@ const readFile = util.promisify(fs.readFile);
 
 export async function main(args: string[]) {
   if (args.length < 1) usage();
+  console.log(args[0]);
   const config = (await import(cwdPath(args[0]))).default;
   const port: number = config.ws.port;
   if (port < 1024) {

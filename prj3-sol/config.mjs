@@ -1,4 +1,4 @@
-const CERT_BASE = `${process.env.HOME}/tmp/localhost-certs`;
+//const CERT_BASE = `${process.env.HOME}/tmp/localhost-certs`;
 
 export default {
 
@@ -12,8 +12,10 @@ export default {
   },
 
   https: {
-    certPath: `${CERT_BASE}/localhost.crt`,
-    keyPath: `${CERT_BASE}/localhost.key`,
+    //certPath: `${CERT_BASE}/localhost.crt`,
+    //keyPath: `${CERT_BASE}/localhost.key`,
+    certPath: './localhost-certs/localhost.crt',
+    keyPath: './localhost-certs/localhost.key',
   },
   
 
