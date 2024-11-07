@@ -53,14 +53,127 @@ function setupRoutes(app: Express.Application) {
   
   //set up application routes
   //TODO: set up application routes
-
+  // Route for adding a new book
+  app.put(`${base}/books`, addBook(app));
+  app.get(`${base}/books/:isbn`, getBook(app));
+  app.get(`${base}/books`, findBooks(app));
+  app.delete(`${base}`, clearBooks(app))
+  app.put(`${base}/lendings`, checkoutBook(app));
+  app.delete(`${base}/lendings`, returnBook(app));
   //must be last
   app.use(do404(app));  //custom handler for page not found
   app.use(doErrors(app)); //custom handler for internal errors
+
+  //TODO: set up route handlers
+  function addBook(app: Express.Application){
+    return (async function(req: Express.Request, res: Express.Response) {
+      try {
+        const result = await app.locals.model.addBook(req.body);
+        if (!result.isOk) {
+          throw result;
+        }
+        const book = result.val;
+        res.location(selfHref(req, book.isbn));
+        const response = selfResult(req, book, STATUS.CREATED);
+        res.status(STATUS.CREATED).json(response);
+      } catch (err) {
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
+  }
+
+  function getBook(app: Express.Application){
+    return (async function(req: Express.Request, res: Express.Response){
+      try {
+        const isbn = req.params.isbn;
+        if (!/^\d{3}-\d{3}-\d{3}-\d$/.test(isbn)){
+          res.status(STATUS.NOT_FOUND).json({
+              isOk: false,
+              message: 'Invalid ISBN format',
+          });
+        } else {
+          const result = await app.locals.model.getBook(isbn);
+          if (!result.isOk) {
+            throw result;
+          }
+          const response = selfResult(req, result.val);
+          res.json(response);
+        }
+      } catch (err) {
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
+  }
+
+  function findBooks(app: Express.Application){
+    return (async function(req: Express.Request, res: Express.Response){
+      try {
+        const q = { ...req.query };  
+        const index = Number(q.index ??  DEFAULT_INDEX);
+        const count = Number(q.count ??  DEFAULT_COUNT);
+        const q1 = { ...q, count: count + 1, index, };
+        const result = await app.locals.model.findBooks(q1);
+        if (!result.isOk) throw result;
+        const response = pagedResult(req, 'isbn', result.val);
+        res.json(response);
+      }catch(err) {
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
+  }
+
+  function checkoutBook(app: Express.Application) {
+    return async function (req: Express.Request, res: Express.Response) {
+      try {
+        const {patronId,isbn} = req.body;
+        const result = await app.locals.model.checkoutBook(req.body);
+        if (!result.isOk) {
+          throw result;
+        }
+        const response = selfResult(req, result.val);
+        res.json(response);
+      } catch (err) {
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    };
+  }
+
+  function returnBook(app: Express.Application) {
+    return (async function(req: Express.Request, res: Express.Response) {
+      try {
+        const result = await app.locals.model.returnBook(req.body);
+        if (!result.isOk) throw result;
+        const response = selfResult(req, result.val);
+        res.json(response);
+      }
+      catch(err) {
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
+  }
+
+  function clearBooks(app: Express.Application){
+    return (async function(req: Express.Request, res: Express.Response) {
+      try {
+        const result = await app.locals.model.clear();
+        if (!result.isOk) {
+          throw result;
+        }
+        const response = selfResult<undefined>(req, undefined);
+        res.json(response);
+      } catch (err){
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
+  }
+
 }
-
-//TODO: set up route handlers
-
 
 /** log request on stdout */
 function doTrace(app: Express.Application) {
