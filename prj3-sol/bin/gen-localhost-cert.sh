@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Define the directory path
-DIR="F:/Users/Nick DeNobrega/Desktop/CS444-Projects/prj3-sol/localhost-certs"
+#DIR="F:/Users/Nick DeNobrega/Desktop/CS444-Projects/prj3-sol/localhost-certs"
+DIR="C:/Users/Nickd/Desktop/CS444-Projects/prj3-sol/localhost-certs"
 
 # Create the directory and change to it
 mkdir -p "$DIR"

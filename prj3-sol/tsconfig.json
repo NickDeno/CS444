@@ -3,10 +3,8 @@
     "rootDir": "src/",
     "outDir": "./dist",
     "allowJs": true,
-    //"module": "esnext",
-    //"moduleResolution": "node",
-    "module": "NodeNext",
-    "moduleResolution":"NodeNext",
+    "module": "esnext",
+    "moduleResolution": "node",
     "lib": [
       "ESNext",
     ],

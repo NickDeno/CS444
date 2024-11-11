@@ -9,7 +9,7 @@
     "cs544-js-utils": "file:cs544-js-utils.tgz",
     "cs544-node-utils": "file:cs544-node-utils.tgz",
     "express": "^4.21.1",
-    "http-status": "^2.0.0",
+    "http-status": "^1.8.1",
     "lending-library": "file:lending-library-0.1.1.tgz",
     "mocha": "^10.7.3",
     "mongodb": "^6.9.0",

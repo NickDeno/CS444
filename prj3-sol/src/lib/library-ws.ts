@@ -12,6 +12,7 @@ import { Link, SelfLinks, NavLinks,
 	 SuccessEnvelope, PagedEnvelope, ErrorEnvelope }
   from './response-envelopes.js';
 
+
 type RequestWithQuery = Express.Request
   & { query: { [_: string]: string|string[]|number } };
 
@@ -53,12 +54,21 @@ function setupRoutes(app: Express.Application) {
   
   //set up application routes
   //TODO: set up application routes
-  // Route for adding a new book
+  // Route for adding a new book, book parameters specified in req.body (Body of JSON request) 
   app.put(`${base}/books`, addBook(app));
+  //Route for getting a book with specific ISBN, isbn specified in req.params (URL in form BASE/books/xxx-xxx-xxxxx)
   app.get(`${base}/books/:isbn`, getBook(app));
+  //Route for searching books with specified SEARCH parameter, SEARCH specified in req.query (BASE/books?search=SEARCH)
   app.get(`${base}/books`, findBooks(app));
+  //Route for clearing out all data (books and checkout/returns)
   app.delete(`${base}`, clearBooks(app))
+  //Route for patronID checking out book with isbn, patronID and isbn specified in req.body (Body of JSON request)
   app.put(`${base}/lendings`, checkoutBook(app));
+  //Route for getting all checkouts of either: a specified patron if findBy="patronId" and patronId value is provided, 
+  //or for a specified book if findBy="isbn" and isbn value is provided. patronId/isbn specified in req.query with 
+  //either BASE/lendings?findBy=isbn&isbn=isbn or BASE/lendings?findBy=patronId&patronId=patronId
+  app.get(`${base}/lendings`, getCheckouts(app))
+  //Route for patronID returning book with isbn, patronID and isbn specified in req.body (Body of JSON request)
   app.delete(`${base}/lendings`, returnBook(app));
   //must be last
   app.use(do404(app));  //custom handler for page not found
@@ -90,11 +100,17 @@ function setupRoutes(app: Express.Application) {
         if (!/^\d{3}-\d{3}-\d{3}-\d$/.test(isbn)){
           res.status(STATUS.NOT_FOUND).json({
               isOk: false,
+              status: STATUS.NOT_FOUND,
               message: 'Invalid ISBN format',
           });
         } else {
           const result = await app.locals.model.getBook(isbn);
-          if (!result.isOk) {
+          console.log(result);
+          if(!result.val){
+            res.status(STATUS.NOT_FOUND).json({
+              isOk: false,
+            });
+          } else if (!result.isOk) {
             throw result;
           }
           const response = selfResult(req, result.val);
@@ -108,7 +124,7 @@ function setupRoutes(app: Express.Application) {
   }
 
   function findBooks(app: Express.Application){
-    return (async function(req: Express.Request, res: Express.Response){
+    return (async function(req: RequestWithQuery, res: Express.Response){
       try {
         const q = { ...req.query };  
         const index = Number(q.index ??  DEFAULT_INDEX);
@@ -125,21 +141,51 @@ function setupRoutes(app: Express.Application) {
     });
   }
 
+  function clearBooks(app: Express.Application){
+    return (async function(req: Express.Request, res: Express.Response) {
+      try {
+        const result = await app.locals.model.clear();
+        if (!result.isOk) {
+          throw result;
+        }
+        const response = selfResult<undefined>(req, undefined);
+        res.json(response);
+      } catch (err){
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
+  }
+
   function checkoutBook(app: Express.Application) {
     return async function (req: Express.Request, res: Express.Response) {
       try {
-        const {patronId,isbn} = req.body;
         const result = await app.locals.model.checkoutBook(req.body);
         if (!result.isOk) {
           throw result;
         }
-        const response = selfResult(req, result.val);
+        const response = selfResult(req, req.body);
         res.json(response);
       } catch (err) {
         const mapped = mapResultErrors(err);
         res.status(mapped.status).json(mapped);
       }
     };
+  }
+
+  function getCheckouts(app: Express.Application){
+    return (async function(req: RequestWithQuery, res: Express.Response){
+      try {
+        const q = { ...req.query };  
+        const result = await app.locals.model.findLendings(q);
+        if (!result.isOk) throw result;
+        const response = selfResult(req, result.val);
+        res.json(response);
+      }catch(err) {
+        const mapped = mapResultErrors(err);
+        res.status(mapped.status).json(mapped);
+      }
+    });
   }
 
   function returnBook(app: Express.Application) {
@@ -151,22 +197,6 @@ function setupRoutes(app: Express.Application) {
         res.json(response);
       }
       catch(err) {
-        const mapped = mapResultErrors(err);
-        res.status(mapped.status).json(mapped);
-      }
-    });
-  }
-
-  function clearBooks(app: Express.Application){
-    return (async function(req: Express.Request, res: Express.Response) {
-      try {
-        const result = await app.locals.model.clear();
-        if (!result.isOk) {
-          throw result;
-        }
-        const response = selfResult<undefined>(req, undefined);
-        res.json(response);
-      } catch (err){
         const mapped = mapResultErrors(err);
         res.status(mapped.status).json(mapped);
       }
