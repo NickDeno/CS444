@@ -105,7 +105,6 @@ function setupRoutes(app: Express.Application) {
           });
         } else {
           const result = await app.locals.model.getBook(isbn);
-          console.log(result);
           if (!result.isOk) {
             throw result;
           }
@@ -351,11 +350,11 @@ function getHttpStatus(errors: Errors.Err[]) : number {
  *  code.
  */
 function mapResultErrors(err: any) : ErrorEnvelope {
-  const fixedErr = err as Errors.ErrResult;
-  const errors = fixedErr.errors;
-  // const errors = err instanceof Errors.ErrResult
-  //   ? err.errors
-  //   : [ new Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'}), ];
+  console.log(err);
+  const errors = err instanceof Errors.ErrResult
+    ? err.errors
+    : [ new Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'}), ];
+  console.log(errors);
   const status = getHttpStatus(errors);
   if (status === STATUS.INTERNAL_SERVER_ERROR)  console.error(errors);
   return { isOk: false, status, errors, };
