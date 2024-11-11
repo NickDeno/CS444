@@ -106,11 +106,7 @@ function setupRoutes(app: Express.Application) {
         } else {
           const result = await app.locals.model.getBook(isbn);
           console.log(result);
-          if(!result.val){
-            res.status(STATUS.NOT_FOUND).json({
-              isOk: false,
-            });
-          } else if (!result.isOk) {
+          if (!result.isOk) {
             throw result;
           }
           const response = selfResult(req, result.val);
@@ -355,9 +351,11 @@ function getHttpStatus(errors: Errors.Err[]) : number {
  *  code.
  */
 function mapResultErrors(err: any) : ErrorEnvelope {
-  const errors = err instanceof Errors.ErrResult
-    ? err.errors
-    : [ new Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'}), ];
+  const fixedErr = err as Errors.ErrResult;
+  const errors = fixedErr.errors;
+  // const errors = err instanceof Errors.ErrResult
+  //   ? err.errors
+  //   : [ new Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'}), ];
   const status = getHttpStatus(errors);
   if (status === STATUS.INTERNAL_SERVER_ERROR)  console.error(errors);
   return { isOk: false, status, errors, };
