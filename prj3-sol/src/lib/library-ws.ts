@@ -335,12 +335,12 @@ const ERROR_MAP: { [code: string]: number } = {
 function getHttpStatus(errors: Errors.Err[]) : number {
   let status: number = 0;
   for (const err of errors) {
-    if (err instanceof Errors.Err) {
+    //if (err instanceof Errors.Err) {
       const code = err?.options?.code;
       const errStatus = (code !== undefined) ? ERROR_MAP[code] : -1;
       if (errStatus > 0 && status === 0) status = errStatus;
       if (errStatus === STATUS.INTERNAL_SERVER_ERROR) status = errStatus;
-    }
+    //}
   }
   return status !== 0 ? status : STATUS.BAD_REQUEST;
 }
@@ -350,11 +350,10 @@ function getHttpStatus(errors: Errors.Err[]) : number {
  *  code.
  */
 function mapResultErrors(err: any) : ErrorEnvelope {
-  console.log(err);
-  const errors = err instanceof Errors.ErrResult
-    ? err.errors
-    : [ new Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'}), ];
-  console.log(errors);
+  // const errors = err instanceof Errors.ErrResult
+  //   ? err.errors
+  //   : [ new Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'}), ];
+  const errors = err.errors;
   const status = getHttpStatus(errors);
   if (status === STATUS.INTERNAL_SERVER_ERROR)  console.error(errors);
   return { isOk: false, status, errors, };

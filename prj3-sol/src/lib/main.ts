@@ -16,21 +16,7 @@ const readFile = util.promisify(fs.readFile);
 
 export async function main(args: string[]) {
   if (args.length < 1) usage();
-  //console.log(args[0]);
-  //const config = (await import(cwdPath(args[0]))).default;
-  const config = {
-    service: {
-      dbUrl: 'mongodb://localhost:27017/books',
-    },
-    ws: {
-      port: 2345,
-      base: '/api',
-    },
-    https: {
-      certPath: './localhost-certs/localhost.crt',
-      keyPath: './localhost-certs/localhost.key',
-    },
-  };
+  const config = (await import(cwdPath(args[0]))).default;
   const port: number = config.ws.port;
   if (port < 1024) {
     usageError(`bad port ${port}: must be >= 1024`);
