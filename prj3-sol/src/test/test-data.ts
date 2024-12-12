@@ -11,9 +11,9 @@ export { BOOKS, };
 //bit messy, but don't want to copy data;
 //also, import json requires experimental import assertions
 async function getTestBooks() {
-  //const dataPath = 'C:/Users/Nickd/Desktop/CS444-Projects/prj3-sol/data/books.json';
+  const dataPath = 'C:/Users/Nickd/Desktop/CS444-Projects/prj3-sol/data/books.json';
   //const dataPath = Path.join(process.env.HOME, 'CS544/Prj3/prj3/prj3-sol/data/books.json');
-  const dataPath = Path.join(process.env.HOME, 'Desktop/CS444-Projects/prj3-sol/data/books.json');
+  //const dataPath = Path.join(process.env.HOME, 'Desktop/CS444-Projects/prj3-sol/data/books.json');
   const readResult = await readJson(dataPath);
   if (readResult.isOk === false) throw readResult.errors;
   return readResult.val as Record<string, any>[];

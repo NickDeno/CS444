@@ -349,6 +349,9 @@ function getHttpStatus(errors: Errors.Err[]) : number {
  *  object will have a "status" property corresponding to HTTP status
  *  code.
  */
+//Had to remove "err instanceof Errors.ErrResult" check since it was always failing
+//and returning generic error messages of form Errors.Err(err.message ?? err.toString(), {code: 'UNKNOWN'})
+//even when "err" was of instance Errors.ErrResult
 function mapResultErrors(err: any) : ErrorEnvelope {
   // const errors = err instanceof Errors.ErrResult
   //   ? err.errors
