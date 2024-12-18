@@ -1,4 +1,4 @@
-## CS375 Repository
+## CS444 Repository
 This repo contains Homework and Project code from my CS444 - Programming for the Web class at Binghamton University in Fall 2024. Primarily implemented code based on questions of the topics described below
 ## Topics Included:
 * Overview of main features of JavaScript and Typescript, including prim types, Arrays, Objects, Reg Expressions, Control Statements, Functions, Classes, Pure Functions, error Handling, TS literals vs JSON
